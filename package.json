@@ -1,0 +1,23 @@
+{
+  "name": "sudoku-game",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "dependencies": {
+    "electron": "^18.0.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start" : "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tsj845/sudoku-game.git"
+  },
+  "author": "Tristan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tsj845/sudoku-game/issues"
+  },
+  "homepage": "https://github.com/tsj845/sudoku-game#readme"
+}

@@ -1,0 +1,16 @@
+#board {
+    position : absolute;
+    width : 50vmin;
+    height : 50vmin;
+    top : calc(50vh - 25vmin);
+    left : calc(50vw - 25vmin);
+}
+
+#board > * {
+    position : absolute;
+    left : calc(50vmin / 9 * var(--x, 0));
+    top : calc(50vmin / 9 * var(--y, 0));
+    width : calc();
+    text-align : center;
+    font-size : 100%;
+}
