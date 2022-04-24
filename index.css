@@ -10,7 +10,30 @@
     position : absolute;
     left : calc(50vmin / 9 * var(--x, 0));
     top : calc(50vmin / 9 * var(--y, 0));
-    width : calc();
+    width : calc(50vmin / 9 - 2px);
+    height : calc(50vmin / 9 - 2px);
+    border : solid gray 1px;
     text-align : center;
-    font-size : 100%;
+    font-size : calc(50vmin / 9 - 2px);
+    user-select : none;
+}
+
+#board > .active {
+    background : #0044cc88;
+}
+
+#board > .active.selected {
+    background : #0066ff88;
+}
+
+#board > .matching:not(.selected) {
+    background : #0022aa88;
+}
+
+#board > .constant {
+    color : black;
+}
+
+#board > .guess {
+    color : blue;
 }
