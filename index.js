@@ -152,7 +152,7 @@ for (let y = 0; y < 9; y ++) {
 function clear_some_constants () {
     let removing = Difficulty.levels[Difficulty.current];
 
-    let choices = gchoices.slice();
+    let choices = JSON.parse(JSON.stringify(gchoices));
 
     while (removing > 0) {
         const choice = choices.splice(Math.floor(Math.random()*choices.length), 1)[0];
@@ -164,11 +164,15 @@ function clear_some_constants () {
 function generate_board () {
     child_process.execSync("python3 generator.py board.json");
     answers = JSON.parse(fs.readFileSync(path.join(__dirname, "board.json")));
-    board.c = answers.slice();
+    board.c = JSON.parse(JSON.stringify(answers));
     board.g = regenerate_guess_list();
     board.p = regenerate_pencil_list();
     clear_some_constants();
+    position.reset();
     redisplay_board();
+    cycle_board_highlight();
+    deactivate_board();
+    activate_board();
 }
 
 generate_board();
@@ -281,3 +285,73 @@ document.addEventListener("keyup", (e) => {
         redisplay_board();
     }
 });
+
+/**
+ * 
+ * @param {Number} x 
+ * @param {Number} y 
+ * @param {Boolean} redisp
+ */
+function check_cell (x, y, redisp) {
+    x = x || position.x;
+    y = y || position.y;
+    if (board.c[y][x] > 0) {
+        return;
+    }
+    if (board.g[y][x] === answers[y][x]) {
+        board.c[y][x] = answers[y][x];
+    } else {
+        board.g[y][x] = 0;
+    }
+
+    if (redisp) {
+        redisplay_board();
+        cycle_board_highlight();
+    }
+}
+
+function check_board () {
+    for (let y = 0; y < 9; y ++) {
+        for (let x = 0; x < 9; x ++) {
+            check_cell(x, y);
+        }
+    }
+    redisplay_board();
+    cycle_board_highlight();
+}
+
+/**
+ * 
+ * @param {Number} x 
+ * @param {Number} y 
+ * @param {Boolean} redisp
+ */
+function reveal_cell (x, y, redisp) {
+    x = x || position.x;
+    y = y || position.y;
+    if (board.c[y][x] > 0) {
+        return;
+    }
+    board.c[y][x] = answers[y][x];
+
+    if (redisp) {
+        redisplay_board();
+        cycle_board_highlight();
+    }
+}
+
+function reveal_board () {
+    for (let y = 0; y < 9; y ++) {
+        for (let x = 0; x < 9; x ++) {
+            reveal_cell(x, y);
+        }
+    }
+    redisplay_board();
+    cycle_board_highlight();
+}
+
+document.getElementById("new-game-btn").addEventListener("click", generate_board);
+document.getElementById("check-cell-btn").addEventListener("click", ()=>{check_cell(undefined, undefined, true)});
+document.getElementById("check-board-btn").addEventListener("click", check_board);
+document.getElementById("reveal-cell-btn").addEventListener("click", ()=>{reveal_cell(undefined, undefined, true)});
+document.getElementById("reveal-board-btn").addEventListener("click", reveal_board);
