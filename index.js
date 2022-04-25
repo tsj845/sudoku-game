@@ -3,14 +3,25 @@ const path = require("path");
 const child_process = require("child_process");
 const { ipcRenderer } = require("electron");
 
+if (!fs.existsSync("./data.json")) {
+    fs.writeFileSync("./data.json", "{}", {encoding:"utf-8"});
+}
+
 const { Events, GameState, GameEvents } = require("./Events");
+const { Data } = require("./Data");
+
+// do cleanup before the window is closed
+window.addEventListener("beforeunload", () => {
+    fs.writeFileSync("./data.json", Data.save(), {encoding:"utf-8"});
+});
+
+// load saved data
+Data.load(JSON.parse(fs.readFileSync("./data.json", {encoding:"utf-8"})));
 
 /**@type {HTMLDialogElement} */
 const PauseMenu = document.getElementById("pause-menu");
 /**@type {HTMLSpanElement} */
 const GameTimer = document.getElementById("game-time");
-
-let counter = 0;
 
 class electronAPI {
     static kill () {
@@ -36,12 +47,9 @@ GameEvents.register(Events.LifeCycle.Error, () => {
     electronAPI.log(new Error().stack);
 });
 
-// GameEvents.register(Events.Timer.Update, (time) => {
-//     // if (time.toString() === "NaN") {
-//     //     GameEvents.trigger(Events.LifeCycle.Error);
-//     // }
-//     GameTimer.textContent = (Number(time) / 100);
-// });
+GameEvents.register(Events.Timer.Update, (time) => {
+    GameTimer.textContent = `${(time-time%60)/60}:${(time%60).toString().padStart(2, "0")}`;
+});
 
 GameEvents.register(Events.PlayState.Pause, () => {
     PauseMenu.showModal();
@@ -233,27 +241,13 @@ for (let y = 0; y < 9; y ++) {
     }
 }
 
-function clear_some_constants () {
-    let removing = Difficulty.levels[Difficulty.current];
-
-    let choices = JSON.parse(JSON.stringify(gchoices));
-
-    while (removing > 0) {
-        const choice = choices.splice(Math.floor(Math.random()*choices.length), 1)[0];
-        board.c[choice[0]][choice[1]] = 0;
-        removing --;
-    }
-}
-
 function generate_board () {
-    counter ++;
-    child_process.execSync(`python3 generator.py board.json ${Difficulty.levels[Difficulty.current]} ${counter}`);
+    child_process.execSync(`python3 generator.py board.json ${Difficulty.levels[Difficulty.current]} ${GameState.LevelSeed().toString().split(".").join("").split("e")[0]}`);
     let output = JSON.parse(fs.readFileSync(path.join(__dirname, "board.json")));
     answers = output[0];
     board.c = output[1];
     board.g = regenerate_guess_list();
     board.p = regenerate_pencil_list();
-    // clear_some_constants();
     position.reset();
     redisplay_board();
     cycle_board_highlight();
@@ -273,9 +267,13 @@ class KeyBinds {
     static INPUT = {
         DELETE : "0",
     }
+    static STATE = {
+        TOGGLE_PAUSE : "0",
+    }
     static bound = {
         MOTION : "MOTION",
         INPUT : "INPUT",
+        STATE : "STATE",
     }
     static data = {
         "MOTION" : {
@@ -286,6 +284,9 @@ class KeyBinds {
         },
         "INPUT" : {
             0 : ["Backspace", "Digit0"],
+        },
+        "STATE" : {
+            0 : ["Escape"],
         }
     }
     static get (area, key) {
@@ -356,6 +357,15 @@ document.addEventListener("keyup", (e) => {
         board.g[position.y][position.x] = 0;
         cycle_board_highlight();
         redisplay_board();
+        return;
+    }
+
+    if (KeyBinds.get(KeyBinds.bound.STATE, key) === KeyBinds.STATE.TOGGLE_PAUSE) {
+        if (GameState.PAUSED) {
+            GameEvents.trigger(Events.PlayState.Play);
+        } else {
+            GameEvents.trigger(Events.PlayState.Pause);
+        }
         return;
     }
 

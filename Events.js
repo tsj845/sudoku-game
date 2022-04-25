@@ -2,6 +2,8 @@
  * @file declares and does boilerplate on all game events throughout the entire client side lifecycle
  */
 
+const crypto = require("crypto");
+
 /**
  * @description Enum for all game events
  */
@@ -38,8 +40,18 @@ const Events = {
  * @description stores game states
  */
  const GameState = {
+    PAUSED : false,
     LOCKED : false,
     AutoChecking : false,
+    Level : {
+        series : 0,
+        level : 0,
+    },
+    LevelSeed () {
+        const hasher = crypto.createHash("md5");
+        hasher.update(`${this.Level.series}-${this.Level.level}`);
+        return Number.parseInt(hasher.digest("hex"), 16);
+    },
     /**
      * @property {Boolean} RUNNING
      * @property {Number} time
@@ -48,15 +60,7 @@ const Events = {
         /**@readonly */
         RUNNING : false,
         /**@readonly */
-        _time : 0,
-        get time () {GameEvents.trigger("ANY", "TIME FETCH", this._time);return Number(this._time)},
-        set time (v) {
-            if (v.toString() === "NaN") {
-                GameEvents.trigger("ANY", "ERROR", "NAN TIME");
-                GameEvents.trigger(Events.LifeCycle.Error);
-            }
-            this._time = v;
-        },
+        time : 0,
         /**@readonly @private */
         timeoutid : 0,
         Start () {
@@ -80,10 +84,14 @@ const Events = {
         },
         /**@private */
         Update () {
+            // electronAPI.log(JSON.stringify(this));
             this.time += 1;
+            // electronAPI.log(this.time);
             GameEvents.trigger(Events.Timer.Update, this.time);
+            // electronAPI.log(this.time);
             if (this.RUNNING) {
-                this.timeoutid = setTimeout(this.Update, 10);
+                // electronAPI.log("ANOTHER");
+                this.timeoutid = setTimeout(()=>{this.Update()}, 1000);
             }
         },
     },
@@ -126,31 +134,28 @@ const Events = {
         let listeners = this.registered[ename];
         listeners.push(f);
     },
-    /**
-     * @param {String} ename 
-     * @param {EventHandler} f 
-     */
-    cancel (ename, f) {
-        /**@type {EvArray} */
-        let listeners = this.registered[ename];
-        for (let i = listeners.length - 1; i >= 0; i --) {
-            if (listeners[i].name === f.name) {
-                listeners.splice(i, 1);
-            }
-        }
-        this.registered[ename] = listeners;
-    },
+    // /**
+    //  * @param {String} ename 
+    //  * @param {EventHandler} f 
+    //  */
+    // cancel (ename, f) {
+    //     /**@type {EvArray} */
+    //     let listeners = this.registered[ename];
+    //     for (let i = listeners.length - 1; i >= 0; i --) {
+    //         if (listeners[i].name === f.name) {
+    //             listeners.splice(i, 1);
+    //         }
+    //     }
+    //     this.registered[ename] = listeners;
+    // },
     /**
      * @param {String} ename - name of event to trigger
      * @param {...any} data - data to be passed to callbacks
      */
     trigger (ename, ...data) {
-        if (ename !== "ANY") {
-            this.trigger("ANY", ename, ...data);
-        }
-        if (ename === Events.Timer.Update) {
-            this.trigger(Events.LifeCycle.Error);
-        }
+        // if (ename !== "ANY") {
+        //     this.trigger("ANY", ename, ...data);
+        // }
         /**@type {EvArray} */
         let listeners = this.registered[ename];
         for (let i = 0; i < listeners.length; i ++) {
@@ -165,10 +170,12 @@ const Events = {
 
 // PLAYSTATE ~ PAUSE & PLAY
 GameEvents.register(Events.PlayState.Pause, () => {
+    GameState.PAUSED = true;
     GameEvents.trigger(Events.Timer.Stop);
 });
 
 GameEvents.register(Events.PlayState.Play, () => {
+    GameState.PAUSED = false;
     GameEvents.trigger(Events.Timer.Start);
 });
 

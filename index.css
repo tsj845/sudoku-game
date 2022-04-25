@@ -54,3 +54,11 @@
     width : 5vmin;
     height : 5vmin;
 }
+
+#game-time {
+    position : absolute;
+    left : 50vw;
+    top : 10vh;
+    transform : translate(-50%, -50%);
+    font-family : monospace;
+}
