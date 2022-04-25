@@ -37,3 +37,20 @@
 #board > .guess {
     color : blue;
 }
+
+.header {
+    position : absolute;
+    left : 0px;
+    top : 0px;
+    width : 100vw;
+    height : 10vh;
+    text-align : center;
+}
+
+#pause-menu-open {
+    position : absolute;
+    right : 1vw;
+    top : 1vh;
+    width : 5vmin;
+    height : 5vmin;
+}

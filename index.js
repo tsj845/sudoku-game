@@ -3,13 +3,57 @@ const path = require("path");
 const child_process = require("child_process");
 const { ipcRenderer } = require("electron");
 
+const { Events, GameState, GameEvents } = require("./Events");
+
+/**@type {HTMLDialogElement} */
+const PauseMenu = document.getElementById("pause-menu");
+/**@type {HTMLSpanElement} */
+const GameTimer = document.getElementById("game-time");
+
 let counter = 0;
 
 class electronAPI {
+    static kill () {
+        ipcRenderer.send("imperative:kill");
+    }
     static log (...args) {
         ipcRenderer.send("debug:log", args);
     }
 }
+
+GameEvents.register("ANY", (oname, ...odata) => {
+    electronAPI.log(`EVENT: ${oname} data: ${odata.join(", ")}`);
+});
+
+document.getElementById("pause-menu-open").addEventListener("click", ()=>{GameEvents.trigger(Events.PlayState.Pause)});
+document.getElementById("pause-menu-close").addEventListener("click", ()=>{GameEvents.trigger(Events.PlayState.Play)});
+
+GameEvents.register(Events.LifeCycle.Kill, () => {
+    electronAPI.kill();
+});
+
+GameEvents.register(Events.LifeCycle.Error, () => {
+    electronAPI.log(new Error().stack);
+});
+
+// GameEvents.register(Events.Timer.Update, (time) => {
+//     // if (time.toString() === "NaN") {
+//     //     GameEvents.trigger(Events.LifeCycle.Error);
+//     // }
+//     GameTimer.textContent = (Number(time) / 100);
+// });
+
+GameEvents.register(Events.PlayState.Pause, () => {
+    PauseMenu.showModal();
+});
+
+GameEvents.register(Events.PlayState.Play, () => {
+    PauseMenu.close();
+});
+
+GameEvents.register(Events.Game.New, () => {
+    generate_board();
+});
 
 /**@type {HTMLSelectElement} */
 const DifficultySelect = document.getElementById("difficulty-select");
@@ -323,7 +367,7 @@ document.addEventListener("keyup", (e) => {
 
     if (v > 0) {
         board.g[position.y][position.x] = v === board.g[position.y][position.x] ? 0 : v;
-        if (AutocheckButton.value === "on") {
+        if (GameState.AutoChecking) {
             check_cell(position.x, position.y);
         }
         cycle_board_highlight();
@@ -400,4 +444,9 @@ document.getElementById("check-cell-btn").addEventListener("click", ()=>{check_c
 document.getElementById("check-board-btn").addEventListener("click", check_board);
 document.getElementById("reveal-cell-btn").addEventListener("click", ()=>{reveal_cell(undefined, undefined, true)});
 document.getElementById("reveal-board-btn").addEventListener("click", reveal_board);
-AutocheckButton.addEventListener("click", ()=>{AutocheckButton.value = AutocheckButton.value === "off" ? "on" : "off"});
+AutocheckButton.addEventListener("click", ()=>{AutocheckButton.value = AutocheckButton.value === "off" ? "on" : "off";GameEvents.trigger(Events.Help.AutoCheckingToggle)});
+
+// LIFECYCLE ~ ERROR
+// GameEvents.register(Events.LifeCycle.Error, () => {
+//     GameEvents.trigger(Events.LifeCycle.Kill);
+// });

@@ -12,6 +12,7 @@ function createWindow () {
 
 app.whenReady().then(() => {
     ipcMain.on("debug:log", (_, args) => {console.log(...args)});
+    ipcMain.on("imperative:kill", app.quit);
 
     createWindow();
 });
