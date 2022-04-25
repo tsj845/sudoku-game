@@ -3,26 +3,44 @@ const path = require("path");
 const child_process = require("child_process");
 const { ipcRenderer } = require("electron");
 
+let counter = 0;
+
 class electronAPI {
     static log (...args) {
         ipcRenderer.send("debug:log", args);
     }
 }
 
+/**@type {HTMLSelectElement} */
+const DifficultySelect = document.getElementById("difficulty-select");
+
+/**
+ * @class
+ * @property {{0:Number,1:Number,2:Number}} levels 
+ * @readonly @property {Number} current
+*/
 let Difficulty = {
     levels : {
         0 : 42,
         1 : 52,
         2 : 65
     },
-    current : 1,
+    get current () {
+        return DifficultySelect.selectedIndex;
+    }
 };
 
 /**@type {HTMLDivElement} */
 const board_div = document.getElementById("board");
+/**@type {HTMLInputElement} */
+const AutocheckButton = document.getElementById("autocheck-btn");
 
 /**@type {{c:Array<Array<Number>>,g:Array<Array<Number>>,p:Array<Array<Array<Number>>>}} */
-let board = {c:[],g:[],p:[]};
+let board = {
+    c : [],
+    g : [],
+    p : []
+};
 /**@type {Array<Array<Number>>} */
 let answers = [];
 
@@ -108,6 +126,28 @@ function redisplay_board () {
             }
         }
     }
+    win_proto();
+}
+
+/**
+ * 
+ * @returns {Boolean}
+ */
+function check_win () {
+    for (let y = 0; y < 9; y ++) {
+        for (let x = 0; x < 9; x ++) {
+            if (answers[y][x].toString() !== board_div.children[y*9+x].textContent) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+function win_proto () {
+    if (check_win()) {
+        document.getElementById("new-game-btn").focus();
+    }
 }
 
 /**
@@ -162,12 +202,14 @@ function clear_some_constants () {
 }
 
 function generate_board () {
-    child_process.execSync("python3 generator.py board.json");
-    answers = JSON.parse(fs.readFileSync(path.join(__dirname, "board.json")));
-    board.c = JSON.parse(JSON.stringify(answers));
+    counter ++;
+    child_process.execSync(`python3 generator.py board.json ${Difficulty.levels[Difficulty.current]} ${counter}`);
+    let output = JSON.parse(fs.readFileSync(path.join(__dirname, "board.json")));
+    answers = output[0];
+    board.c = output[1];
     board.g = regenerate_guess_list();
     board.p = regenerate_pencil_list();
-    clear_some_constants();
+    // clear_some_constants();
     position.reset();
     redisplay_board();
     cycle_board_highlight();
@@ -281,6 +323,9 @@ document.addEventListener("keyup", (e) => {
 
     if (v > 0) {
         board.g[position.y][position.x] = v === board.g[position.y][position.x] ? 0 : v;
+        if (AutocheckButton.value === "on") {
+            check_cell(position.x, position.y);
+        }
         cycle_board_highlight();
         redisplay_board();
     }
@@ -355,3 +400,4 @@ document.getElementById("check-cell-btn").addEventListener("click", ()=>{check_c
 document.getElementById("check-board-btn").addEventListener("click", check_board);
 document.getElementById("reveal-cell-btn").addEventListener("click", ()=>{reveal_cell(undefined, undefined, true)});
 document.getElementById("reveal-board-btn").addEventListener("click", reveal_board);
+AutocheckButton.addEventListener("click", ()=>{AutocheckButton.value = AutocheckButton.value === "off" ? "on" : "off"});

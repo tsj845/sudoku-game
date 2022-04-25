@@ -1,7 +1,10 @@
-from random import shuffle
+from random import shuffle, randrange, seed
 from typing import List
 from json import dumps
 from sys import argv
+
+if len(argv) >= 4:
+    seed(int(argv[3]))
 
 Board = List[List[int]]
 
@@ -101,7 +104,14 @@ class Generator ():
 
         return False
     
-    def generate () -> Board:
+    def erase (board : Board, missing : int) -> Board:
+        spots = [(y, x) for x in range(9) for y in range(9)]
+        for i in range(missing):
+            spot = spots.pop(randrange(0, len(spots)))
+            board[spot[0]][spot[1]] = 0
+        return board
+    
+    def generate (missing : int = 0) -> List[Board]:
         final_board : List[List[int]] = [[0 for i in range(9)] for i in range(9)]
         nums : List[int] = [x for x in range(1, 10)]
         
@@ -114,14 +124,14 @@ class Generator ():
         # much easier to do with instance due the the nature of the "fill_remaining" method
         g = Generator(final_board)
 
-        return g.board
+        return [g.board, Generator.erase(g.board.copy(), missing)]
 
 def print_board (board) -> None:
     for y in range(9):
         print(board[y])
 
-board = Generator.generate()
-print_board(board)
+board = Generator.generate(0 if len(argv) < 3 else int(argv[2]))
+# print_board(board[0])
 
-with open("out.json" if len(argv) == 1 else argv[1], "w") as f:
+with open("out.json" if len(argv) < 2 else argv[1], "w") as f:
     f.write(dumps(board))

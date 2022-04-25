@@ -7,9 +7,15 @@
     <body>
         <input type="button" id="new-game-btn" value="new game">
         <br><br>
-        <span>check: <input type="button" id="check-cell-btn" value="cell"> <input type="button" id="check-board-btn" value="board"></span>
+        <span>check: <input type="button" id="check-cell-btn" value="cell"> <input type="button" id="check-board-btn" value="board"> autocheck: <input type="button" id="autocheck-btn" value="off"></span>
         <br><br>
         <span>reveal: <input type="button" id="reveal-cell-btn" value="cell"> <input type="button" id="reveal-board-btn" value="board"></span>
+        <br><br>
+        <select id="difficulty-select">
+            <option>easy</option>
+            <option>medium</option>
+            <option>hard</option>
+        </select>
         <div id="board"></div>
         <script src="./index.js"></script>
     </body>
